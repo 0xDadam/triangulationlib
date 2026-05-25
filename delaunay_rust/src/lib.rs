@@ -1,18 +1,12 @@
-use pyo3::prelude::*;
+pub mod geometry;
+pub mod algorithms;
+pub mod py_convert;
+
 use numpy::PyReadonlyArray2;
+use pyo3::prelude::*;
 
-#[derive(Clone, Copy, Debug)]
-struct Point {
-    x: f64,
-    y: f64,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Triangle {
-    vertices: [usize; 3],
-    neighbors: [Option<usize>; 3],
-    active: bool,
-}
+use crate::geometry::Point;
+use crate::py_convert::TrianglesToPy;
 
 #[pyfunction]
 fn triangulate_points<'py>(_py: Python<'py>, points_array: PyReadonlyArray2<'py, f64>) -> PyResult<Vec<[usize; 3]>> {
@@ -20,7 +14,7 @@ fn triangulate_points<'py>(_py: Python<'py>, points_array: PyReadonlyArray2<'py,
     
     let mut points = Vec::with_capacity(points_view.shape()[0] + 3);
     for row in points_view.rows() {
-        points.push(Point { x: row[0], y: row[1] });
+        points.push(Point::new(row[0], row[1]));
     }
 
     println!("{}", points.len());
@@ -28,8 +22,21 @@ fn triangulate_points<'py>(_py: Python<'py>, points_array: PyReadonlyArray2<'py,
     Ok(vec![])
 }
 
+#[pyfunction]
+fn triangulate_points_dnc<'py>(_py: Python<'py>, points_array: PyReadonlyArray2<'py, f64>) -> PyResult<Vec<[usize; 3]>> {
+    let points: Vec<Point> = points_array
+        .as_array()
+        .rows()
+        .into_iter()
+        .map(|row| Point::new(row[0], row[1] ))
+        .collect();
+    let triangles = algorithms::divide_and_conquer::triangulate(&points);
+    Ok(triangles.to_py())
+}
+
 #[pymodule]
 fn delaunay_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangulate_points, m)?)?;
+    m.add_function(wrap_pyfunction!(triangulate_points_dnc, m)?)?;
     Ok(())
 }
