@@ -4,13 +4,12 @@ use crate::geometry::{Point, Triangle};
 
 pub fn triangulate(points: &[Point]) -> Vec<Triangle> {
     let mut sorted_to_original: Vec<usize> = (0..points.len()).collect();
-
     sorted_to_original.sort_unstable_by(|&a, &b| points[a].cmp(&points[b]));
 
-    // 3. Budujemy `sorted_points` iterując po nowej, posortowanej kolejności indeksów.
     let sorted_points: Vec<Point> = sorted_to_original.iter().map(|&i| points[i]).collect();
+
     let mut qe_graph = QuadEdgeGraph::new();
-    let (ldo, rdo) = build_triangulation(0, sorted_points.len(), &sorted_points, &mut qe_graph);
+    build_triangulation(0, sorted_points.len(), &sorted_points, &mut qe_graph);
 
     qe_graph.extract_all_triangles(&sorted_points, &sorted_to_original)
 }
@@ -33,10 +32,10 @@ fn build_triangulation(
         graph.splice(a.sym(), b);
 
         let c_val = ccw_points(start, start + 1, start + 2, points);
-        return if (c_val > 0f64) {
+        return if c_val > 0f64 {
             graph.connect(b, a);
             (a, b.sym())
-        } else if (c_val < 0f64) {
+        } else if c_val < 0f64 {
             let c = graph.connect(b, a);
             (c.sym(), c)
         } else {

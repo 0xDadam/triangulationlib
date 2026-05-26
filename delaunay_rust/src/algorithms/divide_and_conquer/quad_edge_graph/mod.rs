@@ -13,6 +13,7 @@ use std::collections::BTreeSet;
 new_key_type! {
     pub struct QEGraphKey;
 }
+
 pub(crate) struct QuadEdgeGraph {
     quad_edge_map: SlotMap<QEGraphKey, QuadEdge>,
 }
@@ -23,9 +24,11 @@ impl QuadEdgeGraph {
             quad_edge_map: SlotMap::<QEGraphKey, QuadEdge>::with_key()
         }
     }
+
     fn get_edge_data(&self, entry: EdgeEntry) -> EdgeData {
         self.quad_edge_map[entry.quad_edge_key].edges[entry.edge_index as usize]
     }
+
     fn set_edge_data(&mut self, value: EdgeData, entry: EdgeEntry) {
         self.quad_edge_map[entry.quad_edge_key].edges[entry.edge_index as usize] = value;
     }
@@ -33,6 +36,7 @@ impl QuadEdgeGraph {
     fn get_next(&self, entry: EdgeEntry) -> EdgeEntry {
         self.quad_edge_map[entry.quad_edge_key].nexts[entry.edge_index as usize]
     }
+
     fn set_next(&mut self, value: EdgeEntry, entry: EdgeEntry) {
         self.quad_edge_map[entry.quad_edge_key].nexts[entry.edge_index as usize] = value;
     }
@@ -75,29 +79,24 @@ impl QuadEdgeGraph {
         self.splice(edge.sym(), edge.sym().oprev(self))
     }
 
-    // Sprawdza czy krawędź tworzy poprawny trójkąt zorientowany odwrotnie do ruchu wskazówek zegara (CCW).
+
     fn get_valid_triangle(&self, e: EdgeEntry, points: &[Point]) -> Option<Triangle> {
         let lnext = e.lnext(self);
 
-        // 1. Sprawdzenie, czy krawędzie zamykają się w cykl o długości 3
         if lnext.lnext(self).lnext(self) != e {
             return None;
         }
 
-        // 2. Wyciągnięcie indeksów z grafu pierwotnego
         if let (EdgeData::Primary(a), EdgeData::Primary(b), EdgeData::Primary(c)) =
             (e.origin(self), e.dest(self), lnext.dest(self))
         {
-            // 3. Wykorzystanie Twojej gotowej funkcji do sprawdzenia orientacji
             if ccw_points(a, b, c, points) > 0f64 {
-                let mut vertices = [a, b, c];
-                return Some(Triangle { vertices });
+                return Some(Triangle { vertices: [a, b, c] });
             }
         }
         None
     }
 
-    /// Wydobywa wszystkie unikalne trójkąty z całego grafu.
     pub(crate) fn extract_all_triangles(
         &self,
         points: &[Point],
@@ -106,7 +105,6 @@ impl QuadEdgeGraph {
         let mut triangles = BTreeSet::new();
 
         for (key, _) in self.quad_edge_map.iter() {
-            // Sprawdzamy obie główne krawędzie skierowane w strukturze QuadEdge (indeksy 0 i 2)
             for edge_index in [0, 2] {
                 let e = EdgeEntry { quad_edge_key: key, edge_index };
 
