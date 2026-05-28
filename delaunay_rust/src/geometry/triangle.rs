@@ -5,6 +5,11 @@ pub struct Triangle {
 
 impl Triangle {
     #[inline]
+    pub fn new(vertices: [usize; 3]) -> Self {
+        Self { vertices }
+    }
+
+    #[inline]
     pub fn vertices(&self) -> [usize; 3] {
         self.vertices
     }
