@@ -6,6 +6,6 @@ pub trait TrianglesToPy {
 
 impl TrianglesToPy for Vec<Triangle> {
     fn to_py(self) -> Vec<[usize; 3]> {
-        self.into_iter().map(|t| t.vertices()).collect()
+        self.into_iter().map(|t| t.vertices).collect()
     }
 }

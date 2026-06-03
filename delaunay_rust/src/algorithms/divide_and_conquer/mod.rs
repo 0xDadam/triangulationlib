@@ -1,5 +1,4 @@
-use crate::geometry::{Point, Triangle};
-pub fn triangulate(points: &[Point]) -> Vec<Triangle> {
-    // TODO
-    Vec::new()
-}
+mod quad_edge_graph;
+mod triangulation;
+
+pub use triangulation::triangulate;
