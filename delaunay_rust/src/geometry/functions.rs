@@ -1,9 +1,11 @@
 use crate::geometry::Point;
 
+#[inline]
 pub fn ccw(pa: Point, pb: Point, pc: Point) -> f64 {
     ((pb.x() - pa.x()) * (pc.y() - pa.y())) - ((pb.y() - pa.y()) * (pc.x() - pa.x()))
 }
 
+#[inline]
 pub fn ccw_points(a: usize, b: usize, c: usize, points: &[Point]) -> f64 {
     ccw(points[a], points[b], points[c])
 }
@@ -29,6 +31,7 @@ pub fn in_circle(a: Point, b: Point, c: Point, d: Point) -> bool {
     det > 0.0
 }
 
+#[inline]
 pub fn in_circle_points(a: usize, b: usize, c: usize, d: usize, points: &[Point]) -> bool {
     in_circle(points[a], points[b], points[c], points[d])
 }

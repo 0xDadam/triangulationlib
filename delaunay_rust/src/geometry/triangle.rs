@@ -1,6 +1,6 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Triangle {
-    vertices: [usize; 3],
+    pub vertices: [usize; 3],
 }
 
 impl Triangle {

@@ -1,3 +1,4 @@
+use crate::geometry::functions::{ccw, in_circle};
 use crate::geometry::{Point, Triangle as OutputTriangle};
 
 const EPS: f64 = 1e-12;
@@ -7,24 +8,6 @@ struct WorkingTriangle {
     vertices: [usize; 3],
     neighbors: [Option<usize>; 3],
     active: bool,
-}
-
-fn det_orient(a: &Point, b: &Point, c: &Point) -> f64 {
-    (b.x() - a.x()) * (c.y() - a.y()) - (b.y() - a.y()) * (c.x() - a.x())
-}
-
-fn in_circle(a: &Point, b: &Point, c: &Point, d: &Point) -> bool {
-    let ax = a.x() - d.x();
-    let ay = a.y() - d.y();
-    let bx = b.x() - d.x();
-    let by = b.y() - d.y();
-    let cx = c.x() - d.x();
-    let cy = c.y() - d.y();
-
-    let det = (ax * ax + ay * ay) * (bx * cy - cx * by) - (bx * bx + by * by) * (ax * cy - cx * ay)
-        + (cx * cx + cy * cy) * (ax * by - bx * ay);
-
-    det > EPS
 }
 
 struct DelaunayTriangulation {
@@ -104,7 +87,7 @@ impl DelaunayTriangulation {
                     let b = &self.points[tri.vertices[1]];
                     let c = &self.points[tri.vertices[2]];
 
-                    if in_circle(a, b, c, p) {
+                    if in_circle(*a, *b, *c, *p) {
                         bad_triangles.push(i);
                     }
                 }
@@ -130,7 +113,7 @@ impl DelaunayTriangulation {
                     let a = &self.points[tri.vertices[i]];
                     let b = &self.points[tri.vertices[(i + 1) % 3]];
 
-                    if det_orient(a, b, p) < -EPS {
+                    if ccw(*a, *b, *p) < -EPS {
                         if let Some(next_idx) = tri.neighbors[i] {
                             curr = next_idx;
                             moved = true;
@@ -158,7 +141,7 @@ impl DelaunayTriangulation {
                             let b = &self.points[n_tri.vertices[1]];
                             let c = &self.points[n_tri.vertices[2]];
 
-                            if in_circle(a, b, c, p) {
+                            if in_circle(*a, *b, *c, *p) {
                                 bad_triangles.push(n_idx);
                                 stack.push(n_idx);
                             }
