@@ -1,4 +1,16 @@
-#[derive(Clone, Copy, Debug, Ord, Eq, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug)]
 pub struct Triangle {
-    pub(crate) vertices: [usize; 3],
+    vertices: [usize; 3],
+}
+
+impl Triangle {
+    #[inline]
+    pub fn new(vertices: [usize; 3]) -> Self {
+        Self { vertices }
+    }
+
+    #[inline]
+    pub fn vertices(&self) -> [usize; 3] {
+        self.vertices
+    }
 }
