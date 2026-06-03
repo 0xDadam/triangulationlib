@@ -28,6 +28,7 @@ fn in_circle(a: &Point, b: &Point, c: &Point, d: &Point) -> bool {
 struct DelaunayTriangulation {
     points: Vec<Point>,
     triangles: Vec<WorkingTriangle>,
+    last_added_tri: usize,
 }
 
 impl DelaunayTriangulation {
@@ -72,21 +73,78 @@ impl DelaunayTriangulation {
         let mut triangles = Vec::with_capacity(points.len() * 2);
         triangles.push(super_triangle);
 
-        Self { points, triangles }
+        Self { points, triangles, last_added_tri: 0 }
     }
 
-    pub fn add_point(&mut self, point_idx: usize) {
+    pub fn add_point(&mut self, point_idx: usize, use_triangle_walk: bool) {
         let p = &self.points[point_idx];
         let mut bad_triangles = Vec::new();
 
-        for (i, tri) in self.triangles.iter().enumerate() {
-            if tri.active {
-                let a = &self.points[tri.vertices[0]];
-                let b = &self.points[tri.vertices[1]];
-                let c = &self.points[tri.vertices[2]];
-                
-                if in_circle(a, b, c, p) {
-                    bad_triangles.push(i);
+        if !use_triangle_walk {
+            // zwykle o(N)
+            for (i, tri) in self.triangles.iter().enumerate() {
+                if tri.active {
+                    let a = &self.points[tri.vertices[0]];
+                    let b = &self.points[tri.vertices[1]];
+                    let c = &self.points[tri.vertices[2]];
+                    
+                    if in_circle(a, b, c, p) {
+                        bad_triangles.push(i);
+                    }
+                }
+            }
+        } else {
+            let mut curr = self.last_added_tri;
+
+            if !self.triangles[curr].active {
+                for (i, tri) in self.triangles.iter().enumerate().rev() {
+                    if tri.active { curr = i; break; }
+                }
+            }
+
+            // traingle walk
+            let mut fallback_counter = 0;
+            loop {
+                let tri = &self.triangles[curr];
+                let mut moved = false;
+                for i in 0..3 {
+                    let a = &self.points[tri.vertices[i]];
+                    let b = &self.points[tri.vertices[(i + 1) % 3]];
+                    
+                    if det_orient(a, b, p) < -EPS {
+                        if let Some(next_idx) = tri.neighbors[i] {
+                            curr = next_idx;
+                            moved = true;
+                            break;
+                        }
+                    }
+                }
+                fallback_counter += 1;
+                if !moved || fallback_counter > self.triangles.len() {
+                    break;
+                }
+            }
+
+            // dfs do szukania reszty bad_triangles
+            let mut stack = vec![curr];
+            bad_triangles.push(curr);
+
+            while let Some(t_idx) = stack.pop() {
+                let tri = self.triangles[t_idx];
+                for neighbor_opt in tri.neighbors.iter() {
+                    if let Some(n_idx) = *neighbor_opt {
+                        if self.triangles[n_idx].active && !bad_triangles.contains(&n_idx) {
+                            let n_tri = &self.triangles[n_idx];
+                            let a = &self.points[n_tri.vertices[0]];
+                            let b = &self.points[n_tri.vertices[1]];
+                            let c = &self.points[n_tri.vertices[2]];
+                            
+                            if in_circle(a, b, c, p) {
+                                bad_triangles.push(n_idx);
+                                stack.push(n_idx);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -97,10 +155,8 @@ impl DelaunayTriangulation {
         
         for &bad_idx in &bad_triangles {
             let tri = self.triangles[bad_idx];
-            
             for i in 0..3 {
                 let neighbor_idx = tri.neighbors[i];
-                
                 let is_boundary = match neighbor_idx {
                     Some(idx) => !bad_triangles.contains(&idx),
                     None => true,
@@ -110,7 +166,6 @@ impl DelaunayTriangulation {
                     boundary.push((tri.vertices[i], tri.vertices[(i + 1) % 3], neighbor_idx));
                 }
             }
-            
             self.triangles[bad_idx].active = false;
         }
 
@@ -119,13 +174,11 @@ impl DelaunayTriangulation {
 
         for (j, &(p1, p2, outer_neighbor)) in boundary.iter().enumerate() {
             let new_tri_idx = base_idx + j;
-            
             let new_tri = WorkingTriangle {
                 vertices: [p1, p2, point_idx],
                 neighbors: [outer_neighbor, None, None], // zewnetrzny, nastepny, poprzedni
                 active: true,
             };
-            
             self.triangles.push(new_tri);
             new_triangles_indices.push(new_tri_idx);
         }
@@ -138,7 +191,6 @@ impl DelaunayTriangulation {
             if let Some(n_idx) = outer_neighbor {
                 let n_tri = &mut self.triangles[n_idx];
                 for k in 0..3 {
-                    //CCW
                     if n_tri.vertices[k] == p2 && n_tri.vertices[(k + 1) % 3] == p1 {
                         n_tri.neighbors[k] = Some(new_tri_idx);
                         break;
@@ -151,7 +203,7 @@ impl DelaunayTriangulation {
         for &t1_idx in &new_triangles_indices {
             for &t2_idx in &new_triangles_indices {
                 if t1_idx == t2_idx { continue; }
-                
+
                 let v1_1 = self.triangles[t1_idx].vertices[1];
                 let v1_0 = self.triangles[t1_idx].vertices[0];
                 let v2_0 = self.triangles[t2_idx].vertices[0];
@@ -165,17 +217,20 @@ impl DelaunayTriangulation {
                 }
             }
         }
+        if !new_triangles_indices.is_empty() {
+            self.last_added_tri = new_triangles_indices[0];
+        }
     }
 }
 
-pub fn triangulate(input_points: &[Point]) -> Vec<OutputTriangle> {
+pub fn triangulate(input_points: &[Point], use_triangle_walk: bool) -> Vec<OutputTriangle> {
     let num_input_points = input_points.len();
     if num_input_points < 3 { return vec![]; }
 
     let mut delaunay = DelaunayTriangulation::new(input_points);
 
     for i in 0..num_input_points {
-        delaunay.add_point(i);
+        delaunay.add_point(i, use_triangle_walk);
     }
 
     //usuwanie smieci
@@ -187,7 +242,7 @@ pub fn triangulate(input_points: &[Point]) -> Vec<OutputTriangle> {
     for tri in delaunay.triangles {
         if tri.active {
             let is_super = tri.vertices.iter().any(|&v| v == super_p1 || v == super_p2 || v == super_p3);
-            
+
             if !is_super {
                 result.push(OutputTriangle::new(tri.vertices));
             }
