@@ -6,6 +6,8 @@ dependencies:
   - python=3.12
   - numpy
   - matplotlib
+  - cmake
+  - pybind11
   - pip
   - pip:
     - maturin
