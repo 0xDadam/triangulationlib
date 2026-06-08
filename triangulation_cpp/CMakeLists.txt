@@ -11,6 +11,7 @@ set(SOURCES
     src/main_module.cpp
     src/algorithms/incremental/triangulation.cpp
     src/algorithms/divide_and_conquer/triangulation.cpp
+    src/algorithms/divide_and_conquer/quad_edge.cpp
 )
 
 pybind11_add_module(delaunay_cpp ${SOURCES})
