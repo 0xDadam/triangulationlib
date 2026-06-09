@@ -1,5 +1,3 @@
-//
-// Created by Hubert on 09/06/2026.
 #pragma once
 #include <cstdint>
 #include <vector>
@@ -23,26 +21,44 @@ private:
         }
         const uint32_t index = free_slots.back();
         free_slots.pop_back();
-        return {index, slots[index].generation + 1};
+        return {index, slots[index].generation};
     }
+
+    void insert_at(const Key key, T value) {
+        if (key.index >= slots.size()) {
+            slots.push_back( {value, key.generation} );
+            return;
+        }
+        slots[key.index] = {value, key.generation};
+    }
+
 public:
     template <typename F>
     requires std::invocable<F, Key>
     Key insert_with_key(F&& f) {
-        Key key = get_next_key();
-        T value = std::forward<F>(f)(key);
-        return insert(key, value);
-    }
-
-    Key insert(Key key, T value) {
-        slots[key.index] = {value, key.generation};
+        const Key key = get_next_key();
+        const T value = std::forward<F>(f)(key);
+        insert_at(key, value);
         return key;
     }
 
-    T get(Key key) {
+    Key insert(T value) {
+        const Key key = get_next_key();
+        insert_at(key, value);
+        return key;
+    }
+
+    T& get(const Key key) {
         if (key.index >= slots.size() || key.generation != slots[key.index].generation) {
-            throw std::runtime_error("Trying to access an invalid key. Has the entry been removed?");
+            throw std::runtime_error("Trying to use an invalid or stale key.");
         }
         return slots[key.index].value;
+    }
+
+    void erase(const Key key) {
+        if (key.index < slots.size() && slots[key.index].generation == key.generation) {
+            ++slots[key.index].generation;
+            free_slots.push_back(key.index);
+        }
     }
 };
