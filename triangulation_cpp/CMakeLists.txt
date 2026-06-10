@@ -29,3 +29,9 @@ target_include_directories(delaunay_cpp PRIVATE src)
 
 # Instalacja dla scikit-build
 install(TARGETS delaunay_cpp DESTINATION .)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported)
+if(ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
