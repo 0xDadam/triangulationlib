@@ -140,30 +140,24 @@ namespace algorithms::divide_and_conquer {
         std::set<std::array<size_t, 3>> triangle_set;
 
         for (const auto& key : quad_edge_map.get_all_keys()) {
-            // Only check primary edges (index 0 and 2)
             for (uint8_t edge_index : {0, 2}) {
                 EdgeEntry e(shared_from_this(), key, edge_index);
 
-                // Check if it forms a triangle (3 edges in the cycle)
                 auto lnext = e.lnext();
                 if (lnext.lnext().lnext() != e) {
                     continue;
                 }
 
-                // Get the three vertices
                 size_t v1 = e.get_origin();
                 size_t v2 = e.get_dest();
                 size_t v3 = lnext.get_dest();
 
-                // Check if triangle is valid (counter-clockwise orientation)
                 const auto& p1 = points[v1];
                 const auto& p2 = points[v2];
                 const auto& p3 = points[v3];
 
-                // Calculate signed area (CCW check)
                 auto area = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
                 if (area > 0) {
-                    // Store with sorted indices for uniqueness
                     std::array<unsigned long, 3> sorted_vertices = { v1, v2, v3 };
                     std::sort(sorted_vertices.begin(), sorted_vertices.end());
                     triangle_set.insert(sorted_vertices);
@@ -171,7 +165,6 @@ namespace algorithms::divide_and_conquer {
             }
         }
 
-        // Convert to triangles
         std::vector<geometry::Triangle> triangles;
         triangles.reserve(triangle_set.size());
         for (const auto& vertices : triangle_set) {

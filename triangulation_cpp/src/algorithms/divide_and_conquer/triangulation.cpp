@@ -38,24 +38,20 @@ namespace algorithms::divide_and_conquer {
             sorted_to_original[i] = i;
         }
 
-        // Sort indices based on point comparison (lexicographic: x then y)
-        std::sort(sorted_to_original.begin(), sorted_to_original.end(),
-            [&input_points](size_t a, size_t b) {
-                return input_points[a] < input_points[b];
-            });
+        std::ranges::sort(sorted_to_original,
+                          [&input_points](size_t a, size_t b) {
+                              return input_points[a] < input_points[b];
+                          });
 
-        // Create sorted points array
         std::vector<geometry::Point> sorted_points;
         sorted_points.reserve(input_points.size());
         for (size_t i : sorted_to_original) {
             sorted_points.push_back(input_points[i]);
         }
 
-        // Build triangulation
         const auto graph = QuadEdgeGraph::create();
         build_triangulation(0, sorted_points.size(), sorted_points, graph);
 
-        // Extract triangles
         return graph->extract_all_triangles(sorted_points, sorted_to_original);
     }
 
@@ -93,7 +89,6 @@ namespace algorithms::divide_and_conquer {
             }
         }
 
-        // Divide and conquer
         const size_t mid = (start + end) / 2;
         auto [ldo_left, rdo_left] = build_triangulation(start, mid, points, graph);
         auto [ldo_right, rdo_right] = build_triangulation(mid, end, points, graph);
@@ -132,9 +127,7 @@ namespace algorithms::divide_and_conquer {
             rdo_right = base_lre;
         }
 
-        // The zipper - merge triangulations
         while (true) {
-            // Find left candidate
             EdgeEntry lcand = base_lre.sym().onext();
             if (to_right(base_lre.get_origin(), base_lre.get_dest(),
                         lcand.get_dest(), points)) {
@@ -147,7 +140,6 @@ namespace algorithms::divide_and_conquer {
                 }
             }
 
-            // Find right candidate
             EdgeEntry rcand = base_lre.oprev();
             if (to_right(base_lre.get_origin(), base_lre.get_dest(),
                         rcand.get_dest(), points)) {
