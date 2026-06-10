@@ -15,13 +15,13 @@ namespace algorithms::divide_and_conquer {
 
     class EdgeEntry {
     private:
-        std::shared_ptr<QuadEdgeGraph> graph;
+        QuadEdgeGraph* graph;
         Key qe_key;
         uint8_t index = 0;
 
     public:
-        EdgeEntry(std::shared_ptr<QuadEdgeGraph> g, const Key k, const uint8_t idx)
-        : graph(std::move(g)), qe_key(k), index(idx) {}
+        EdgeEntry(QuadEdgeGraph* g, const Key k, const uint8_t idx)
+        : graph(g), qe_key(k), index(idx) {}
 
         [[nodiscard]] EdgeEntry rot() const {
             return {
@@ -80,7 +80,7 @@ namespace algorithms::divide_and_conquer {
         std::array<size_t, 2> values;
         std::array<EdgeEntry, 4> nexts;
 
-        QuadEdge(const size_t origin, const size_t dest, const Key key, const std::shared_ptr<QuadEdgeGraph>& graph) :
+        QuadEdge(const size_t origin, const size_t dest, const Key key, QuadEdgeGraph* graph) :
             values ({origin, dest}),
             nexts({
                 EdgeEntry{graph, key, 0},
@@ -90,25 +90,20 @@ namespace algorithms::divide_and_conquer {
             }) {}
     };
 
-    class QuadEdgeGraph : public std::enable_shared_from_this<QuadEdgeGraph>{
+    class QuadEdgeGraph{
         friend class EdgeEntry;
         SlotMap<QuadEdge> quad_edge_map;
 
     public:
-        static std::shared_ptr<QuadEdgeGraph> create() {
-            return std::shared_ptr<QuadEdgeGraph>(new QuadEdgeGraph());
-        }
-
         EdgeEntry make_edge(size_t origin, size_t dest) {
-            auto self = shared_from_this();
             const auto key = quad_edge_map.insert_with_key(
-                [origin, dest, self](const Key k) {
+                [origin, dest, this](const Key k) {
                     return QuadEdge{
-                        origin, dest, k, self
+                        origin, dest, k, this
                     };
                 }
             );
-            return EdgeEntry{self, key, 0};
+            return EdgeEntry{this, key, 0};
         }
 
         void splice(EdgeEntry a, EdgeEntry b) {
@@ -137,49 +132,47 @@ namespace algorithms::divide_and_conquer {
             const std::vector<geometry::Point> & points,
             const std::vector<unsigned long> & sorted_to_original) {
 
-        std::set<std::array<size_t, 3>> triangle_set;
+            std::set<std::array<size_t, 3>> triangle_set;
 
-        for (const auto& key : quad_edge_map.get_all_keys()) {
-            for (uint8_t edge_index : {0, 2}) {
-                EdgeEntry e(shared_from_this(), key, edge_index);
+            for (const auto& key : quad_edge_map.get_all_keys()) {
+                for (uint8_t edge_index : {0, 2}) {
+                    EdgeEntry e(this, key, edge_index);
 
-                auto lnext = e.lnext();
-                if (lnext.lnext().lnext() != e) {
-                    continue;
-                }
+                    auto lnext = e.lnext();
+                    if (lnext.lnext().lnext() != e) {
+                        continue;
+                    }
 
-                size_t v1 = e.get_origin();
-                size_t v2 = e.get_dest();
-                size_t v3 = lnext.get_dest();
+                    size_t v1 = e.get_origin();
+                    size_t v2 = e.get_dest();
+                    size_t v3 = lnext.get_dest();
 
-                const auto& p1 = points[v1];
-                const auto& p2 = points[v2];
-                const auto& p3 = points[v3];
+                    const auto& p1 = points[v1];
+                    const auto& p2 = points[v2];
+                    const auto& p3 = points[v3];
 
-                auto area = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
-                if (area > 0) {
-                    std::array<unsigned long, 3> sorted_vertices = { v1, v2, v3 };
-                    std::sort(sorted_vertices.begin(), sorted_vertices.end());
-                    triangle_set.insert(sorted_vertices);
+                    auto area = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+                    if (area > 0) {
+                        std::array<unsigned long, 3> sorted_vertices = { v1, v2, v3 };
+                        std::sort(sorted_vertices.begin(), sorted_vertices.end());
+                        triangle_set.insert(sorted_vertices);
+                    }
                 }
             }
+
+            std::vector<geometry::Triangle> triangles;
+            triangles.reserve(triangle_set.size());
+            for (const auto& vertices : triangle_set) {
+                triangles.emplace_back(
+                    sorted_to_original[vertices[0]],
+                    sorted_to_original[vertices[1]],
+                    sorted_to_original[vertices[2]]
+                );
+            }
+
+            return triangles;
         }
 
-        std::vector<geometry::Triangle> triangles;
-        triangles.reserve(triangle_set.size());
-        for (const auto& vertices : triangle_set) {
-            triangles.emplace_back(
-                sorted_to_original[vertices[0]],
-                sorted_to_original[vertices[1]],
-                sorted_to_original[vertices[2]]
-            );
-        }
-
-        return triangles;
-}
-
-    private:
-        QuadEdgeGraph() = default;
     };
 
     inline EdgeEntry &EdgeEntry::next() {

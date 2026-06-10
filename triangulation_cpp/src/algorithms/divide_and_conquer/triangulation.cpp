@@ -11,13 +11,13 @@ namespace algorithms::divide_and_conquer {
     std::pair<EdgeEntry, EdgeEntry> build_triangulation(
         size_t start, size_t end,
         const std::vector<geometry::Point>& points,
-        const std::shared_ptr<QuadEdgeGraph>& graph);
+        QuadEdgeGraph* graph);
 
     std::pair<EdgeEntry, EdgeEntry> merge_triangulations(
         EdgeEntry ldo_left, EdgeEntry rdo_left,
         EdgeEntry ldo_right, EdgeEntry rdo_right,
         const std::vector<geometry::Point>& points,
-        const std::shared_ptr<QuadEdgeGraph>& graph);
+        QuadEdgeGraph* graph);
 
     bool to_left(size_t origin, size_t dest, size_t point,
                  const std::vector<geometry::Point>& points) {
@@ -49,7 +49,7 @@ namespace algorithms::divide_and_conquer {
             sorted_points.push_back(input_points[i]);
         }
 
-        const auto graph = QuadEdgeGraph::create();
+        auto* graph = new QuadEdgeGraph();
         build_triangulation(0, sorted_points.size(), sorted_points, graph);
 
         return graph->extract_all_triangles(sorted_points, sorted_to_original);
@@ -59,7 +59,7 @@ namespace algorithms::divide_and_conquer {
     std::pair<EdgeEntry, EdgeEntry> build_triangulation(
         size_t start, size_t end,
         const std::vector<geometry::Point>& points,
-        const std::shared_ptr<QuadEdgeGraph>& graph) {
+        QuadEdgeGraph* graph) {
 
         size_t n = end - start;
 
@@ -100,11 +100,11 @@ namespace algorithms::divide_and_conquer {
         EdgeEntry ldo_left, EdgeEntry rdo_left,
         EdgeEntry ldo_right, EdgeEntry rdo_right,
         const std::vector<geometry::Point>& points,
-        const std::shared_ptr<QuadEdgeGraph>& graph) {
+        QuadEdgeGraph* graph) {
 
         // Find lower common tangent
-        EdgeEntry ldo_inner = std::move(rdo_left);
-        EdgeEntry rdo_inner = std::move(ldo_right);
+        EdgeEntry ldo_inner = rdo_left;
+        EdgeEntry rdo_inner = ldo_right;
 
         while (true) {
             if (to_left(ldo_inner.get_origin(), ldo_inner.get_dest(),
