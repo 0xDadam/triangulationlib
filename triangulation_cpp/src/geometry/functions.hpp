@@ -28,4 +28,12 @@ namespace geometry {
         return det > 0.0;
     }
 
+    inline double ccw_points(size_t a, size_t b, size_t c, const std::vector<geometry::Point>& points) {
+        return ccw(points[a], points[b], points[c]);
+    }
+
+    inline bool in_circle_points(size_t a, size_t b, size_t c, size_t d,
+                                 const std::vector<geometry::Point>& points) {
+        return in_circle(points[a], points[b], points[c], points[d]);
+    }
 }
