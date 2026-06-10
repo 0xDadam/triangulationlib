@@ -19,21 +19,14 @@ namespace algorithms::divide_and_conquer {
         const std::vector<geometry::Point>& points,
         const std::shared_ptr<QuadEdgeGraph>& graph);
 
-    // Helper for in_circle check with edge origins
-    bool in_circle_points_unbox(
-        size_t a, size_t b, size_t c, size_t d,
-        const std::vector<geometry::Point>& points) {
-        return in_circle_points(a, b, c, d, points);
-    }
-
     bool to_left(size_t origin, size_t dest, size_t point,
                  const std::vector<geometry::Point>& points) {
-        return ccw_points(origin, dest, point, points) > 0.0;
+        return ccw_points(point, origin, dest, points) > 0.0;
     }
 
     bool to_right(size_t origin, size_t dest, size_t point,
                   const std::vector<geometry::Point>& points) {
-        return ccw_points(origin, dest, point, points) < 0.0;
+        return ccw_points(point, dest, origin, points) > 0.0;
     }
 
     std::vector<geometry::Triangle> triangulate(
@@ -119,11 +112,11 @@ namespace algorithms::divide_and_conquer {
         EdgeEntry rdo_inner = std::move(ldo_right);
 
         while (true) {
-            if (to_left(ldo_inner.get_origin(), rdo_inner.get_origin(),
-                        ldo_inner.get_dest(), points)) {
+            if (to_left(ldo_inner.get_origin(), ldo_inner.get_dest(),
+                        rdo_inner.get_origin(), points)) {
                 ldo_inner = ldo_inner.lnext();
-            } else if (to_right(rdo_inner.get_origin(), ldo_inner.get_origin(),
-                               rdo_inner.get_dest(), points)) {
+            } else if (to_right(rdo_inner.get_origin(), rdo_inner.get_dest(),
+                              ldo_inner.get_origin(), points)) {
                 rdo_inner = rdo_inner.rprev();
             } else {
                 break;
@@ -145,7 +138,7 @@ namespace algorithms::divide_and_conquer {
             EdgeEntry lcand = base_lre.sym().onext();
             if (to_right(base_lre.get_origin(), base_lre.get_dest(),
                         lcand.get_dest(), points)) {
-                while (in_circle_points_unbox(
+                while (in_circle_points(
                     base_lre.get_dest(), base_lre.get_origin(),
                     lcand.get_dest(), lcand.onext().get_dest(), points)) {
                     EdgeEntry t = lcand.onext();
@@ -158,7 +151,7 @@ namespace algorithms::divide_and_conquer {
             EdgeEntry rcand = base_lre.oprev();
             if (to_right(base_lre.get_origin(), base_lre.get_dest(),
                         rcand.get_dest(), points)) {
-                while (in_circle_points_unbox(
+                while (in_circle_points(
                     base_lre.get_dest(), base_lre.get_origin(),
                     rcand.get_dest(), rcand.oprev().get_dest(), points)) {
                     EdgeEntry t = rcand.oprev();
@@ -176,7 +169,7 @@ namespace algorithms::divide_and_conquer {
                 break;
             }
 
-            if (!l_valid || (r_valid && in_circle_points_unbox(
+            if (!l_valid || (r_valid && in_circle_points(
                 lcand.get_dest(), lcand.get_origin(),
                 rcand.get_origin(), rcand.get_dest(), points))) {
                 base_lre = graph->connect(rcand, base_lre.sym());

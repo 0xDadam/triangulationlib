@@ -120,7 +120,7 @@ namespace algorithms::divide_and_conquer {
         }
 
         EdgeEntry connect(const EdgeEntry& a, const EdgeEntry& b) {
-            const auto e = make_edge(a.get_dest(), b.get_dest());
+            const auto e = make_edge(a.get_dest(), b.get_origin());
             splice(e, a.lnext());
             splice(e.sym(), b);
             return e;
@@ -175,7 +175,11 @@ namespace algorithms::divide_and_conquer {
         std::vector<geometry::Triangle> triangles;
         triangles.reserve(triangle_set.size());
         for (const auto& vertices : triangle_set) {
-            triangles.emplace_back( vertices );
+            triangles.emplace_back(
+                sorted_to_original[vertices[0]],
+                sorted_to_original[vertices[1]],
+                sorted_to_original[vertices[2]]
+            );
         }
 
         return triangles;
