@@ -76,7 +76,9 @@ impl QuadEdgeGraph {
 
     pub(crate) fn delete_edge(&mut self, edge: EdgeEntry) {
         self.splice(edge, edge.oprev(self));
-        self.splice(edge.sym(), edge.sym().oprev(self))
+        self.splice(edge.sym(), edge.sym().oprev(self));
+
+        self.quad_edge_map.remove(edge.quad_edge_key);
     }
 
 
