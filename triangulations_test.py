@@ -3,6 +3,7 @@ import time
 import gc
 
 from triangulation_python.dnc import triangulate_dnc
+from triangulation_python.incremental import triangulate_python_bw
 import delaunay_cpp
 import delaunay_rust
 
@@ -11,10 +12,11 @@ def run_benchmark():
     
     algorithms = {
         "Python (DNC)": lambda pts: triangulate_dnc(pts),
-        "Rust (Bowyer-Watson)": lambda pts: delaunay_rust.triangulate_points(pts, True),
         "Rust (DNC)": lambda pts: delaunay_rust.triangulate_points_dnc(pts),
-        "C++ (Bowyer-Watson)": lambda pts: delaunay_cpp.triangulate_points(pts),
-        "C++ (DNC)": lambda pts: delaunay_cpp.triangulate_points_dnc(pts)
+        "C++ (DNC)": lambda pts: delaunay_cpp.triangulate_points_dnc(pts),
+        "Python (Bowyer-Watson)": lambda pts: triangulate_python_bw(pts),
+        "Rust (Bowyer-Watson)": lambda pts: delaunay_rust.triangulate_points(pts, True),
+        "C++ (Bowyer-Watson)": lambda pts: delaunay_cpp.triangulate_points(pts)
     }
 
     # --- ETAP 1: Porównanie dla zdefiniowanych rozmiarów ---
