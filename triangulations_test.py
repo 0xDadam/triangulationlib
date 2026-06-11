@@ -16,7 +16,7 @@ def run_benchmark():
         "C++ (DNC)": lambda pts: delaunay_cpp.triangulate_points_dnc(pts),
         "Python (Bowyer-Watson)": lambda pts: triangulate_python_bw(pts),
         "Rust (Bowyer-Watson)": lambda pts: delaunay_rust.triangulate_points(pts, True),
-        "C++ (Bowyer-Watson)": lambda pts: delaunay_cpp.triangulate_points(pts)
+        "C++ (Bowyer-Watson)": lambda pts: delaunay_cpp.triangulate_points(pts, True)
     }
 
     # --- ETAP 1: Porównanie dla zdefiniowanych rozmiarów ---

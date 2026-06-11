@@ -38,3 +38,16 @@ def draw_triangulation(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.show()
+
+def display_triangulation_structure(triangulation):
+    import pandas as pd
+
+    # Tworzymy DataFrame i nazywamy kolumny jako wierzchołki trójkąta
+    df_triangles = pd.DataFrame(list(triangulation), columns=['Wierzchołek A', 'Wierzchołek B', 'Wierzchołek C'])
+
+    # Dodajemy nagłówek z ładnym formatowaniem Markdown
+    from IPython.display import display, Markdown
+    display(Markdown("### **Struktura zbioru trójkątów (Indeksy punktów)**"))
+
+    # Wyświetlamy tabelę (IPython automatycznie zrobi z tego ładny HTML)
+    display(df_triangles)
