@@ -39,6 +39,10 @@ triangulationlib/
 │           ├── incremental/   #   Bowyer–Watson z triangle walk
 │           └── divide_and_conquer/  #   quad-edge w C++ (SlotMap)
 │
+├── tests/                     # testy integracyjne (pytest)
+│   ├── conftest.py            #   dodaje katalog projektu do sys.path
+│   └── test_triangulations.py #   sprawdza warunek Delaunaya dla każdego wariantu
+│
 ├── triangulations_test.py     # benchmark porównawczy (zapisuje benchmark_wyniki.md)
 ├── visualization.py           # rysowanie wynikowej siatki (matplotlib)
 ├── benchmark_wyniki.md        # ostatnie wyniki benchmarku
@@ -130,6 +134,28 @@ Wyniki trafiają do pliku `benchmark_wyniki.md`. Orientacyjne liczby z ostatnieg
 
 DNC wygrywa z Bowyer–Watsonem zarówno w czystej złożoności (N log N vs N√N), jak i w praktyce — implementacje natywne liczą ponad 100 tys. punktów w ułamku sekundy. Pełne omówienie wyników i decyzji architektonicznych znajduje się w `prezentacja.md` / `project_presentation.ipynb`.
 
+## Testy integracyjne (pytest)
+
+Siedem zestawów testów w `tests/test_triangulations.py` weryfikuje każdy z ośmiu wariantów triangulacji (Python/Rust/C++ × Bowyer–Watson/DNC, plus wariant naiwny BW bez triangle walk):
+
+```bash
+python -m pytest tests/ -v
+```
+
+Co sprawdzają:
+
+| Test | Co weryfikuje |
+|---|---|
+| `test_output_shape_and_indices` | Kształt `(M, 3)`, zakres indeksów, brak trójkątów z powtórzonym wierzchołkiem |
+| `test_strict_ccw_orientation` | Każdy trójkąt ma ściśle dodatnie pole ze znakiem (CCW) |
+| `test_delaunay_empty_circumcircle` | **Definicja Delaunaya**: dla każdego trójkąta żaden inny punkt wejściowy nie leży ściśle wewnątrz jego okręgu opisanego (predykat in-circle z wyznacznika 3×3) |
+| `test_no_duplicate_triangles` | Brak zduplikowanych trójkątów (niezależnie od orientacji) |
+| `test_all_vertices_used` | Każdy punkt wejściowy pojawia się w co najmniej jednym trójkącie |
+| `test_planar_edge_count` | Spójność z twierdzeniem Eulera: `3·M = 2·E_i + E_h` |
+| `test_unit_square_two_triangles`, `test_three_points_single_triangle`, `test_all_implementations_agree_on_square_with_center` | Testy dokładnych wyników na małych chmurach z jednoznaczną triangulacją |
+
+Testy są parametryzowane na wielu scenariuszach: kwadrat, kwadrat z punktem środkowym, chmury wielokątów niewypukłych, losowe chmury jednostajne (50 i 200 punktów), chmury gaussowskie (100 punktów) oraz chmury na okręgu z niewielkim szumem.
+
 ## Główne decyzje implementacyjne
 
 - **Reprezentacja grafu.** Python trzyma trójkąty jako obiekty na stercie z referencjami (`Triangle.neighbors = [None, None, None]`). Rust i C++ używają płaskich `Vec` / `std::vector` indeksów — gwarantuje to ciągłość pamięci i dobrą lokalność cache.
@@ -141,6 +167,7 @@ DNC wygrywa z Bowyer–Watsonem zarówno w czystej złożoności (N log N vs N�
 
 ## Materiały dodatkowe
 
+- `tests/test_triangulations.py` — testy integracyjne pytest (warunek Delaunaya + testy strukturalne dla każdego wariantu).
 - `prezentacja.md` — pełne omówienie algorytmów, decyzji architektonicznych i wniosków z benchmarku (po polsku).
 - `project_presentation.ipynb` — wersja notatnikowa tej samej treści.
 - `benchmark_wyniki.md` — tabela wyników z ostatniego uruchomienia benchmarku.

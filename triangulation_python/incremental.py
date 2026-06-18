@@ -176,17 +176,21 @@ class DelaunayTriangulation:
 
     def get_final_triangles(self, input_points):
         """
-        Filtruje trójkąty usuwając te powiązane z super-trójkątem 
+        Filtruje trójkąty usuwając te powiązane z super-trójkątem
         i zwraca tablicę indeksów w formacie [[id1, id2, id3], ...]
+
+        Każdy trójkąt jest zwracany w orientacji CCW: jeżeli wypadł CW
+        (bo krawędź graniczna pochodzi od trójkąta zdegenerowanego),
+        dwa ostatnie wierzchołki są zamieniane przed zwróceniem.
         """
         # Tworzymy mapowanie: obiekt Point -> jego indeks w oryginalnej chmurze punktów
         point_to_idx = {Point(pt[0], pt[1]): i for i, pt in enumerate(input_points)}
-        
+
         final_triangles = []
         for t in self.triangles:
             if not t.active:
                 continue
-                
+
             # Sprawdzamy, czy któryś wierzchołek należy do super-trójkąta
             # (Super-trójkąt ma współrzędne rzędu 10 * width, czyli nie ma go w point_to_idx)
             is_super_triangle_vertex = False
@@ -194,14 +198,20 @@ class DelaunayTriangulation:
                 if v not in point_to_idx:
                     is_super_triangle_vertex = True
                     break
-            
+
             if not is_super_triangle_vertex:
-                # Pobieramy indeksy punktów dla danego trójkąta
                 idx0 = point_to_idx[t.vertices[0]]
                 idx1 = point_to_idx[t.vertices[1]]
                 idx2 = point_to_idx[t.vertices[2]]
+
+                # Wymuszamy orientację CCW: jeżeli pole ze znakiem jest
+                # niedodatnie, zamieniamy ostatnie dwa indeksy.
+                p0, p1, p2 = t.vertices[0], t.vertices[1], t.vertices[2]
+                if det_orient(p0, p1, p2) <= 0:
+                    idx1, idx2 = idx2, idx1
+
                 final_triangles.append([idx0, idx1, idx2])
-                
+
         return np.array(final_triangles, dtype=np.int32)
     
 def triangulate_python_bw(points):

@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
 #include <cassert>
+#include <map>
 #include <memory>
-#include <set>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -132,7 +132,10 @@ namespace algorithms::divide_and_conquer {
             const std::vector<geometry::Point> & points,
             const std::vector<unsigned long> & sorted_to_original) {
 
-            std::set<std::array<size_t, 3>> triangle_set;
+            // Dedup key: the sorted vertex tuple of the *raw* traversal
+            // (independent of edge direction). Value: the CCW vertex triple
+            // so the final emitted triangles have consistent orientation.
+            std::map<std::array<size_t, 3>, std::array<size_t, 3>> canonical;
 
             for (const auto& key : quad_edge_map.get_all_keys()) {
                 for (uint8_t edge_index : {0, 2}) {
@@ -152,21 +155,28 @@ namespace algorithms::divide_and_conquer {
                     const auto& p3 = points[v3];
 
                     auto area = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+                    std::array<size_t, 3> ccw_vertices;
                     if (area > 0) {
-                        std::array<unsigned long, 3> sorted_vertices = { v1, v2, v3 };
-                        std::sort(sorted_vertices.begin(), sorted_vertices.end());
-                        triangle_set.insert(sorted_vertices);
+                        ccw_vertices = { v1, v2, v3 };
+                    } else if (area < 0) {
+                        ccw_vertices = { v1, v3, v2 };
+                    } else {
+                        ccw_vertices = { v1, v2, v3 };
                     }
+
+                    std::array<size_t, 3> dedup_key = { v1, v2, v3 };
+                    std::sort(dedup_key.begin(), dedup_key.end());
+                    canonical.emplace(dedup_key, ccw_vertices);
                 }
             }
 
             std::vector<geometry::Triangle> triangles;
-            triangles.reserve(triangle_set.size());
-            for (const auto& vertices : triangle_set) {
+            triangles.reserve(canonical.size());
+            for (const auto& [_, ccw_vertices] : canonical) {
                 triangles.emplace_back(
-                    sorted_to_original[vertices[0]],
-                    sorted_to_original[vertices[1]],
-                    sorted_to_original[vertices[2]]
+                    sorted_to_original[ccw_vertices[0]],
+                    sorted_to_original[ccw_vertices[1]],
+                    sorted_to_original[ccw_vertices[2]]
                 );
             }
 

@@ -100,8 +100,16 @@ def _extract_triangles_from_edges(
     points: np.ndarray,
     sorted_to_original: np.ndarray,
 ) -> List[Tuple[int, int, int]]:
-    """Extract unique primal triangles by traversing reachable directed edges."""
-    triangles_in_sorted_order = set()
+    """Extract primal triangles by traversing reachable directed edges.
+
+    Each triangle is returned in CCW order. Because the quad-edge
+    traversal visits every triangle up to three times (once per incident
+    directed edge), the raw vertex triples are first canonicalised by
+    sorted vertex set — that gives us one entry per undirected triangle —
+    then re-rotated into CCW order so the caller sees a consistent
+    orientation.
+    """
+    canonical_by_vertex_set: dict[tuple[int, int, int], Tuple[int, int, int]] = {}
     visited: set[tuple[int, int]] = set()
     stack = [seed_edges[0], seed_edges[1]]
 
@@ -115,13 +123,16 @@ def _extract_triangles_from_edges(
         if e.data is not None and e.sym.data is not None:
             if e.lnext.lnext.lnext == e:
                 a, b, c = e.origin, e.dest, e.lnext.dest
-                if ccw_index(a, b, c, points) > 0:
-                    triangles_in_sorted_order.add(tuple(sorted((a, b, c))))
+                key = tuple(sorted((a, b, c)))
+                if key not in canonical_by_vertex_set:
+                    canonical_by_vertex_set[key] = (a, b, c)
 
         stack.extend([e.onext, e.sym])
 
     triangles: List[Tuple[int, int, int]] = []
-    for a, b, c in triangles_in_sorted_order:
+    for key, (a, b, c) in canonical_by_vertex_set.items():
+        if ccw_index(a, b, c, points) < 0:
+            a, b, c = a, c, b
         triangles.append(
             (
                 int(sorted_to_original[a]),

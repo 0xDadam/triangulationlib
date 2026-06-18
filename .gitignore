@@ -1,21 +1,59 @@
+# ─── Python ────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 *.pyd
 *.dll
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
 
+# ─── Virtual environments ──────────────────────────────────────────────
 .env
-.venv
+.env.*
+.venv/
 env/
 venv/
 ENV/
 
-/delaunay_rust/target/
+# ─── Rust (triangulation_rust/target is also covered by **/target/) ─────
+**/target/
 **/*.rs.bk
+Cargo.lock
+.cargo/
 
+# ─── C++ / CMake / scikit-build-core ───────────────────────────────────
+**/build/
+**/cmake-build-debug/
+**/cmake-build-release/
+**/cmake-build-*/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile
+**/Testing/
+**/CTestTestfile.cmake
+**/*.a
+**/*.lib
+**/*.o
+**/*.obj
+**/*.dylib
+
+# ─── IDE / editor ─────────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
+*.swo
 
+# ─── OS metadata ──────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini

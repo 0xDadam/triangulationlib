@@ -92,9 +92,14 @@ impl QuadEdgeGraph {
         if let (EdgeData::Primary(a), EdgeData::Primary(b), EdgeData::Primary(c)) =
             (e.origin(self), e.dest(self), lnext.dest(self))
         {
-            if ccw_points(a, b, c, points) > 0f64 {
+            let ccw = ccw_points(a, b, c, points);
+            if ccw > 0f64 {
                 return Some(Triangle { vertices: [a, b, c] });
             }
+            if ccw < 0f64 {
+                return Some(Triangle { vertices: [a, c, b] });
+            }
+            return Some(Triangle { vertices: [a, b, c] });
         }
         None
     }
@@ -104,20 +109,25 @@ impl QuadEdgeGraph {
         points: &[Point],
         sorted_to_original: &[usize],
     ) -> Vec<Triangle> {
-        let mut triangles = BTreeSet::new();
+        // Dedup key: sorted vertex tuple of the raw traversal (independent
+        // of edge direction). Value: the CCW triple so the emitted
+        // triangles all have consistent orientation.
+        let mut triangles: std::collections::BTreeMap<[usize; 3], Triangle> =
+            std::collections::BTreeMap::new();
 
         for (key, _) in self.quad_edge_map.iter() {
             for edge_index in [0, 2] {
                 let e = EdgeEntry { quad_edge_key: key, edge_index };
 
                 if let Some(triangle) = self.get_valid_triangle(e, points) {
-                    let mut vertices = triangle.vertices.map(|vertex| sorted_to_original[vertex]);
-                    vertices.sort_unstable();
-                    triangles.insert(Triangle { vertices });
+                    let original = triangle.vertices.map(|v| sorted_to_original[v]);
+                    let mut key = original;
+                    key.sort_unstable();
+                    triangles.entry(key).or_insert(Triangle { vertices: original });
                 }
             }
         }
 
-        triangles.into_iter().collect()
+        triangles.into_values().collect()
     }
 }
